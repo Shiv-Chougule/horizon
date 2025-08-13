@@ -1,0 +1,464 @@
+{% comment %}
+  Section: vehicle-product
+  Purpose: Product detail layout for vehicles (cars) inspired by CarMarket layout
+  Usage: Add this section to your product template. It expects product context.
+
+  Metafields (namespace: cars) suggested:
+  - cars.make               (single_line_text)
+  - cars.model              (single_line_text)
+  - cars.trim               (single_line_text)
+  - cars.year               (number_integer)
+  - cars.mileage_km         (number_integer)
+  - cars.fuel_type          (single_line_text)
+  - cars.transmission       (single_line_text)
+  - cars.drivetrain         (single_line_text)
+  - cars.power_hp           (number_integer)
+  - cars.torque_nm          (number_integer)
+  - cars.body_style         (single_line_text)
+  - cars.exterior_color     (single_line_text)
+  - cars.interior_color     (single_line_text)
+  - cars.doors              (number_integer)
+  - cars.seats              (number_integer)
+  - cars.registration_date  (date)
+  - cars.vin                (single_line_text)
+  - cars.stock_number       (single_line_text)
+  - cars.owners             (number_integer)
+  - cars.co2_gkm            (number_integer)
+  - cars.consumption_l100   (number_decimal)
+  - cars.length_mm          (number_integer)
+  - cars.width_mm           (number_integer)
+  - cars.height_mm          (number_integer)
+  - cars.warranty_text      (single_line_text)
+  - cars.location_label     (single_line_text)
+  - cars.seller_phone       (single_line_text)
+  - cars.seller_whatsapp    (single_line_text)
+  - cars.features           (list.single_line_text)
+  - cars.additional_images  (file_reference list) — optional if you want extra gallery media beyond product.media
+
+  Notes:
+  - Uses product.media for gallery.
+  - Includes sticky action bar (Call, WhatsApp, Enquire) and a contact form.
+  - Includes a simple finance calculator.
+  - Includes JSON-LD Vehicle structured data.
+{% endcomment %}
+
+<section id="vehicle-product" class="vehicle-wrapper">
+  <div class="container">
+
+    <!-- Breadcrumbs -->
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">{{ 'general.breadcrumbs.home' | t | default: 'Home' }}</a>
+      <span aria-hidden="true">›</span>
+      <a href="/collections/all">{{ 'collections.general.all_of_collection' | t | default: 'Vehicles' }}</a>
+      <span aria-hidden="true">›</span>
+      <span>{{ product.title }}</span>
+    </nav>
+
+    <!-- Header row -->
+    <div class="header-row">
+      <div class="title-wrap">
+        {% assign year = product.metafields.cars.year %}
+        {% assign make = product.metafields.cars.make | default: product.vendor %}
+        {% assign model = product.metafields.cars.model %}
+        {% assign trim = product.metafields.cars.trim %}
+        <h1 class="title">{{ year }} {{ make }} {{ model }}{% if trim != blank %} {{ trim }}{% endif %}</h1>
+        <p class="subtitle">
+          {% if product.metafields.cars.body_style %}
+            <span class="chip">{{ product.metafields.cars.body_style }}</span>
+          {% endif %}
+          {% if product.metafields.cars.fuel_type %}
+            <span class="chip">{{ product.metafields.cars.fuel_type }}</span>
+          {% endif %}
+          {% if product.metafields.cars.transmission %}
+            <span class="chip">{{ product.metafields.cars.transmission }}</span>
+          {% endif %}
+          {% if product.metafields.cars.drivetrain %}
+            <span class="chip">{{ product.metafields.cars.drivetrain }}</span>
+          {% endif %}
+        </p>
+      </div>
+      <div class="price-wrap">
+        <div class="price">
+          {% if product.compare_at_price_max > product.price %}
+            <span class="compare">{{ product.compare_at_price_min | money }}</span>
+          {% endif %}
+          <span class="current">{{ product.price | money }}</span>
+        </div>
+        {% if product.available %}
+          <span class="badge in-stock">In stock</span>
+        {% else %}
+          <span class="badge out-stock">Sold</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="grid">
+      <!-- Gallery -->
+      <div class="gallery">
+        {% assign first_image = product.featured_media | default: product.media.first %}
+        <div class="gallery-main" id="gallery-main">
+          {% if first_image %}
+            <img id="mainImage" src="{{ first_image | img_url: '2048x' }}" alt="{{ first_image.alt | escape }}">
+          {% else %}
+            <div class="no-media">No image available</div>
+          {% endif %}
+        </div>
+        {% if product.media.size > 1 %}
+          <div class="thumbnails" id="thumbs">
+            {% for media in product.media %}
+              {% if media.media_type == 'image' %}
+                <button class="thumb {% if forloop.first %}active{% endif %}" data-src="{{ media | img_url: '2048x' }}" aria-label="View image {{ forloop.index }}">
+                  <img src="{{ media | img_url: '300x' }}" alt="{{ media.alt | escape }}">
+                </button>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Sidebar card -->
+      <aside class="sidebar">
+        <div class="card seller">
+          <h3>Seller</h3>
+          <p class="seller-name">{{ shop.name }}</p>
+          {% if product.metafields.cars.location_label %}
+            <p class="seller-location">{{ product.metafields.cars.location_label }}</p>
+          {% endif %}
+          <div class="contact-actions">
+            {% if product.metafields.cars.seller_phone %}
+              <a class="btn primary" href="tel:{{ product.metafields.cars.seller_phone | replace: ' ', '' }}">Call</a>
+            {% endif %}
+            {% if product.metafields.cars.seller_whatsapp %}
+              <a class="btn ghost" target="_blank" href="https://wa.me/{{ product.metafields.cars.seller_whatsapp | replace: '+', '' | replace: ' ', '' }}?text={{ 'Hello, I am interested in' | url_encode }}%20{{ product.title | url_encode }}">WhatsApp</a>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="card finance">
+          <h3>Finance Estimator</h3>
+          <div class="finance-grid">
+            <label>Price
+              <input id="fin-price" type="number" value="{{ product.price | divided_by: 100.0 }}" min="0" step="0.01">
+            </label>
+            <label>Down Payment
+              <input id="fin-down" type="number" value="0" min="0" step="0.01">
+            </label>
+            <label>Term (months)
+              <input id="fin-term" type="number" value="60" min="6" step="1">
+            </label>
+            <label>APR (%)
+              <input id="fin-apr" type="number" value="8" min="0" step="0.1">
+            </label>
+          </div>
+          <div class="finance-result">
+            <div><small>Estimated monthly</small></div>
+            <div class="monthly" id="fin-monthly">—</div>
+          </div>
+        </div>
+
+        <div class="card enquire">
+          <h3>Enquire about this vehicle</h3>
+          {% form 'contact', id: 'vehicle-enquiry' %}
+            <input type="hidden" name="contact[Vehicle]" value="{{ product.title }} ({{ product.url }})">
+            <label for="ContactName">Name</label>
+            <input required id="ContactName" type="text" name="contact[name]">
+
+            <label for="ContactEmail">Email</label>
+            <input required id="ContactEmail" type="email" name="contact[email]">
+
+            <label for="ContactPhone">Phone</label>
+            <input id="ContactPhone" type="tel" name="contact[phone]">
+
+            <label for="ContactMessage">Message</label>
+            <textarea id="ContactMessage" name="contact[body]" rows="4">I am interested in this vehicle. Please contact me.</textarea>
+
+            <button type="submit" class="btn primary">Send enquiry</button>
+
+            {% if form.posted_successfully? %}
+              <p class="form-success">Thanks! We'll get back to you shortly.</p>
+            {% endif %}
+            {% if form.errors %}
+              <div class="form-errors">
+                {{ form.errors | default_errors }}
+              </div>
+            {% endif %}
+          {% endform %}
+        </div>
+      </aside>
+    </div>
+
+    <!-- Key specs -->
+    <div class="card specs">
+      <h2>Key specifications</h2>
+      <div class="specs-grid">
+        {% assign mileage = product.metafields.cars.mileage_km %}
+        {% if mileage %}
+          <div class="spec"><span class="label">Mileage</span><span class="value">{{ mileage | times: 1 | money_without_currency: 'USD' | replace: ',', '' | replace: '.00', '' | replace: '$', '' }} km</span></div>
+        {% endif %}
+        {% if product.metafields.cars.power_hp %}
+          <div class="spec"><span class="label">Power</span><span class="value">{{ product.metafields.cars.power_hp }} hp</span></div>
+        {% endif %}
+        {% if product.metafields.cars.torque_nm %}
+          <div class="spec"><span class="label">Torque</span><span class="value">{{ product.metafields.cars.torque_nm }} Nm</span></div>
+        {% endif %}
+        {% if product.metafields.cars.co2_gkm %}
+          <div class="spec"><span class="label">CO₂</span><span class="value">{{ product.metafields.cars.co2_gkm }} g/km</span></div>
+        {% endif %}
+        {% if product.metafields.cars.consumption_l100 %}
+          <div class="spec"><span class="label">Consumption</span><span class="value">{{ product.metafields.cars.consumption_l100 }} l/100km</span></div>
+        {% endif %}
+        {% if product.metafields.cars.exterior_color %}
+          <div class="spec"><span class="label">Exterior</span><span class="value">{{ product.metafields.cars.exterior_color }}</span></div>
+        {% endif %}
+        {% if product.metafields.cars.interior_color %}
+          <div class="spec"><span class="label">Interior</span><span class="value">{{ product.metafields.cars.interior_color }}</span></div>
+        {% endif %}
+        {% if product.metafields.cars.seats %}
+          <div class="spec"><span class="label">Seats</span><span class="value">{{ product.metafields.cars.seats }}</span></div>
+        {% endif %}
+        {% if product.metafields.cars.doors %}
+          <div class="spec"><span class="label">Doors</span><span class="value">{{ product.metafields.cars.doors }}</span></div>
+        {% endif %}
+        {% if product.metafields.cars.vin %}
+          <div class="spec"><span class="label">VIN</span><span class="value monospace">{{ product.metafields.cars.vin }}</span></div>
+        {% endif %}
+        {% if product.metafields.cars.stock_number %}
+          <div class="spec"><span class="label">Stock #</span><span class="value monospace">{{ product.metafields.cars.stock_number }}</span></div>
+        {% endif %}
+        {% if product.metafields.cars.registration_date %}
+          <div class="spec"><span class="label">Registered</span><span class="value">{{ product.metafields.cars.registration_date | date: '%B %Y' }}</span></div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Description & Features accordions -->
+    <div class="card accordions">
+      <details open>
+        <summary>Description</summary>
+        <div class="content rte">
+          {{ product.description }}
+        </div>
+      </details>
+
+      {% assign features = product.metafields.cars.features %}
+      {% if features != blank %}
+        <details>
+          <summary>Features</summary>
+          <div class="content">
+            <ul class="features-list">
+              {% for f in features %}
+                <li>{{ f }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        </details>
+      {% endif %}
+
+      <details>
+        <summary>Dimensions</summary>
+        <div class="content dims">
+          {% if product.metafields.cars.length_mm %}
+            <div class="dim"><span>Length</span><span>{{ product.metafields.cars.length_mm }} mm</span></div>
+          {% endif %}
+          {% if product.metafields.cars.width_mm %}
+            <div class="dim"><span>Width</span><span>{{ product.metafields.cars.width_mm }} mm</span></div>
+          {% endif %}
+          {% if product.metafields.cars.height_mm %}
+            <div class="dim"><span>Height</span><span>{{ product.metafields.cars.height_mm }} mm</span></div>
+          {% endif %}
+        </div>
+      </details>
+
+      {% if product.tags contains 'warranty' or product.metafields.cars.warranty_text %}
+        <details>
+          <summary>Warranty</summary>
+          <div class="content">
+            <p>{{ product.metafields.cars.warranty_text | default: 'Dealer warranty available. Contact us for details.' }}</p>
+          </div>
+        </details>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- Sticky action bar -->
+  <div class="sticky-bar">
+    <div class="sticky-inner">
+      <div class="sticky-left">
+        <span class="title-small">{{ year }} {{ make }} {{ model }}</span>
+      </div>
+      <div class="sticky-right">
+        <span class="sticky-price">{{ product.price | money }}</span>
+        {% if product.metafields.cars.seller_phone %}
+          <a class="btn primary" href="tel:{{ product.metafields.cars.seller_phone | replace: ' ', '' }}">Call</a>
+        {% endif %}
+        <a class="btn ghost" href="#vehicle-enquiry">Enquire</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON-LD Vehicle schema -->
+  {% assign imageList = product.media | map: 'preview_image' | map: 'src' %}
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Vehicle",
+      "name": {{ product.title | json }},
+      "brand": {{ make | json }},
+      "model": {{ model | json }},
+      "vehicleModelDate": {{ year | json }},
+      "vehicleConfiguration": {{ trim | json }},
+      "bodyType": {{ product.metafields.cars.body_style | json }},
+      "fuelType": {{ product.metafields.cars.fuel_type | json }},
+      "vehicleTransmission": {{ product.metafields.cars.transmission | json }},
+      "driveWheelConfiguration": {{ product.metafields.cars.drivetrain | json }},
+      "mileageFromOdometer": {
+        "@type": "QuantitativeValue",
+        "value": {{ mileage | default: 0 }},
+        "unitCode": "KMT"
+      },
+      "image": {{ imageList | json }},
+      "offers": {
+        "@type": "Offer",
+        "priceCurrency": {{ cart.currency.iso_code | json }},
+        "price": {{ product.price | divided_by: 100.0 | json }},
+        "availability": "https://schema.org/{% if product.available %}InStock{% else %}SoldOut{% endif %}",
+        "url": {{ product.url | json }}
+      }
+    }
+  </script>
+
+  <style>
+    .vehicle-wrapper { --radius: 14px; --gap: 18px; --shadow: 0 6px 24px rgba(0,0,0,.06); --primary: #0f60ff; }
+    .vehicle-wrapper .container { max-width: 1200px; margin: 0 auto; padding: 12px; }
+    .breadcrumbs { font-size: 12px; margin: 8px 0 16px; color: #64748b; display:flex; gap:8px; align-items:center; flex-wrap: wrap; }
+    .breadcrumbs a { color: #64748b; text-decoration: none; }
+
+    .header-row { display:flex; align-items: flex-start; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .title { font-size: 28px; line-height: 1.2; margin: 6px 0; }
+    .subtitle { margin: 0; display:flex; gap: 8px; flex-wrap: wrap; }
+    .chip { background:#eef2ff; color:#374151; padding:6px 10px; border-radius: 999px; font-size:12px; }
+    .price-wrap { text-align: right; min-width: 220px; }
+    .price .compare { text-decoration: line-through; color:#9ca3af; display:block; }
+    .price .current { font-size: 28px; font-weight: 700; }
+    .badge { padding: 4px 8px; border-radius: 999px; font-size: 12px; display:inline-block; margin-top: 4px; }
+    .in-stock { background:#ecfdf5; color:#065f46; }
+    .out-stock { background:#fef2f2; color:#991b1b; }
+
+    .grid { display:grid; grid-template-columns: 1.5fr .9fr; gap: var(--gap); margin-top: 16px; }
+
+    .gallery { background:#fff; border-radius: var(--radius); box-shadow: var(--shadow); overflow:hidden; }
+    .gallery-main { aspect-ratio: 16 / 9; background:#0b0b0b; display:flex; align-items:center; justify-content:center; }
+    .gallery-main img { width:100%; height:100%; object-fit: contain; background:#000; }
+    .thumbnails { display:grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap:8px; padding: 10px; background:#0b0b0b; }
+    .thumb { border:0; background:#111827; border-radius:10px; overflow:hidden; cursor:pointer; padding:0; outline: 2px solid transparent; }
+    .thumb.active, .thumb:focus { outline-color: #6366f1; }
+    .thumb img { width:100%; height:70px; object-fit: cover; display:block; }
+
+    .sidebar { display:flex; flex-direction: column; gap: var(--gap); }
+    .card { background:#fff; border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+    .card h3 { margin: 0 0 10px; font-size: 18px; }
+
+    .seller .seller-name { font-weight: 600; margin: 6px 0; }
+    .seller .seller-location { color:#6b7280; margin: 0 0 10px; }
+    .contact-actions { display:flex; gap: 10px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; padding:10px 14px; border-radius: 12px; text-decoration:none; border: 1px solid #e5e7eb; transition: transform .05s ease; }
+    .btn:active { transform: translateY(1px); }
+    .btn.primary { background: var(--primary); color:#fff; border-color: transparent; }
+    .btn.ghost { background:#fff; color:#111827; }
+
+    .finance-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .finance-grid label { font-size:12px; color:#6b7280; display:flex; flex-direction: column; gap:6px; }
+    .finance-grid input { border:1px solid #e5e7eb; border-radius: 10px; padding: 10px; font-size:14px; }
+    .finance-result { display:flex; align-items: baseline; justify-content: space-between; margin-top: 10px; }
+    .finance-result .monthly { font-size: 22px; font-weight: 700; }
+
+    .enquire label { display:block; font-size: 12px; color:#6b7280; margin-top: 10px; }
+    .enquire input, .enquire textarea { width:100%; border:1px solid #e5e7eb; border-radius: 10px; padding: 10px; font-size:14px; }
+    .enquire button { margin-top: 12px; width:100%; }
+    .form-success { color:#065f46; background:#ecfdf5; border:1px solid #a7f3d0; padding: 8px 10px; border-radius: 10px; margin-top: 10px; }
+    .form-errors { color:#991b1b; background:#fef2f2; border:1px solid #fecaca; padding: 8px 10px; border-radius: 10px; margin-top: 10px; }
+
+    .specs { margin-top: 16px; }
+    .specs-grid { display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .spec { background:#f9fafb; border-radius: 12px; padding: 12px; display:flex; align-items:center; justify-content: space-between; }
+    .spec .label { color:#6b7280; }
+    .spec .value { font-weight: 600; }
+    .monospace { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+    .accordions details { border:1px solid #e5e7eb; border-radius: 12px; margin-top: 10px; overflow:hidden; }
+    .accordions summary { cursor:pointer; padding: 14px 16px; font-weight:600; list-style: none; }
+    .accordions summary::-webkit-details-marker { display:none }
+    .accordions .content { padding: 0 16px 16px; color:#374151; }
+    .dims { display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .dims .dim { background:#f9fafb; border-radius: 10px; padding:10px; display:flex; align-items:center; justify-content:space-between; }
+
+    .sticky-bar { position: sticky; bottom: 0; background: rgba(255,255,255,.9); backdrop-filter: blur(8px); border-top: 1px solid #e5e7eb; margin-top: 16px; }
+    .sticky-inner { max-width: 1200px; margin:0 auto; padding: 10px 12px; display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+    .title-small { font-weight: 600; }
+    .sticky-right { display:flex; align-items:center; gap: 8px; }
+    .sticky-price { font-weight:700; margin-right: 8px; }
+
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+      .price-wrap { text-align: left; }
+      .specs-grid { grid-template-columns: repeat(2, 1fr); }
+      .dims { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 500px) {
+      .specs-grid { grid-template-columns: 1fr; }
+      .dims { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+
+  <script>
+    (function(){
+      // Gallery switching
+      var main = document.getElementById('mainImage');
+      var thumbs = document.getElementById('thumbs');
+      if (main && thumbs) {
+        thumbs.addEventListener('click', function(e){
+          var btn = e.target.closest('button.thumb');
+          if(!btn) return;
+          var src = btn.getAttribute('data-src');
+          if(src){
+            main.src = src;
+            thumbs.querySelectorAll('.thumb').forEach(function(t){ t.classList.remove('active'); });
+            btn.classList.add('active');
+          }
+        });
+      }
+      // Finance calculator: standard amortization
+      function calc(){
+        var P = parseFloat(document.getElementById('fin-price')?.value || '0');
+        var D = parseFloat(document.getElementById('fin-down')?.value || '0');
+        var n = parseInt(document.getElementById('fin-term')?.value || '0', 10);
+        var apr = parseFloat(document.getElementById('fin-apr')?.value || '0');
+        var r = (apr/100)/12;
+        var principal = Math.max(P - D, 0);
+        var m = n > 0 && r >= 0 ? (r===0 ? principal / n : (principal * r) / (1 - Math.pow(1+r, -n))) : 0;
+        var out = document.getElementById('fin-monthly');
+        if(out){ out.textContent = isFinite(m) ? new Intl.NumberFormat(undefined, { style:'currency', currency: '{{ cart.currency.iso_code }}' }).format(m) : '—'; }
+      }
+      ['fin-price','fin-down','fin-term','fin-apr'].forEach(function(id){ var el=document.getElementById(id); if(el){ el.addEventListener('input', calc); }});
+      calc();
+    })();
+  </script>
+</section>
+
+{% schema %}
+{
+  "name": "Vehicle product (CarMarket style)",
+  "settings": [
+    { "type": "text", "id": "fallback_phone", "label": "Fallback phone", "default": "+41 00 000 00 00" },
+    { "type": "checkbox", "id": "show_warranty", "label": "Show warranty section if missing metafield", "default": true },
+    { "type": "text", "id": "warranty_default", "label": "Default warranty text", "default": "Dealer warranty available. Contact us for details." }
+  ],
+  "blocks": [
+  ],
+  "presets": [
+    { "name": "Vehicle product (CarMarket style)", "category": "Product" }
+  ]
+}
+{% endschema %}
